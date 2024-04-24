@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.22)
+project(Titan)
+add_executable(Titan WIN32 main.cpp)
+
+target_sources(Titan PRIVATE keyCodes.h events.h)
+target_sources(Titan PRIVATE resource.h highResolutionClock.h highResolutionClock.cpp)
+target_sources(Titan PRIVATE application.h application.cpp)
+target_sources(Titan PRIVATE window.h window.cpp)
+
+target_sources(Titan PRIVATE commandQueue.h commandQueue.cpp)
+target_sources(Titan PRIVATE game.h game.cpp)
