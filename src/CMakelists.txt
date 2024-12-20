@@ -1,0 +1,1 @@
+target_sources(Titan PRIVATE shader.h shader.cpp)

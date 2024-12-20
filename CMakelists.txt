@@ -5,9 +5,14 @@ add_executable(Titan WIN32 main.cpp)
 
 find_package(SDL2 REQUIRED)
 find_package(GLEW 2.0 REQUIRED)
-target_link_libraries(Titan SDL2::SDL2)
-target_link_libraries(Titan Opengl32.lib)
-target_link_libraries(Titan GLEW::GLEW)
+find_package(glm CONFIG REQUIRED)
+target_link_libraries(Titan PRIVATE SDL2::SDL2)
+target_link_libraries(Titan PRIVATE Opengl32.lib)
+target_link_libraries(Titan PRIVATE GLEW::GLEW)
+target_link_libraries(Titan PRIVATE glm::glm)
+
+find_path(STB_INCLUDE_DIRS "stb.h")
+target_include_directories(Titan PRIVATE ${STB_INCLUDE_DIRS})
 
 set_property(TARGET Titan PROPERTY CXX_STANDARD 20)
 
@@ -15,3 +20,6 @@ if (WIN32)
 # Set subsystem to windows for windowed application
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 endif()
+
+add_subdirectory(src)
+target_include_directories(Titan PRIVATE src)
