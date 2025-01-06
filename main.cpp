@@ -57,84 +57,76 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     Shader shader("shaders/shader.vert", "shaders/shader.frag");
+    Shader lightingShader("shaders/simple.vert", "shaders/lighting.frag");
+    Shader lightSourceShader("shaders/simple.vert", "shaders/light.frag");
 
     float vertices[] = {
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        // positions          // normals           // texture coords
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
 
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
 
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    };
-    /*
-    unsigned int indices[] = {
-        0, 1, 3,
-        1, 2, 3
-    };
-    */
-    glm::vec3 cubePositions[] = {
-        glm::vec3( 0.0f,  0.0f,  0.0f), 
-        glm::vec3( 2.0f,  5.0f, -15.0f), 
-        glm::vec3(-1.5f, -2.2f, -2.5f),  
-        glm::vec3(-3.8f, -2.0f, -12.3f),  
-        glm::vec3( 2.4f, -0.4f, -3.5f),  
-        glm::vec3(-1.7f,  3.0f, -7.5f),  
-        glm::vec3( 1.3f, -2.0f, -2.5f),  
-        glm::vec3( 1.5f,  2.0f, -2.5f), 
-        glm::vec3( 1.5f,  0.2f, -1.5f), 
-        glm::vec3(-1.3f,  1.0f, -1.5f)  
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
     };
     GLuint VBO;
     glGenBuffers(1, &VBO);
-    // GLuint EBO;
-    // glGenBuffers(1, &EBO);
 
+    // Cube VAO
     GLuint VAO;
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); 
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    // Light VAO
+    GLuint lightVAO;
+    glGenVertexArrays(1, &lightVAO);
+    glBindVertexArray(lightVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO); // Re-use the same VBO as the container cube
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
 
     // Texture loading
     stbi_set_flip_vertically_on_load(true);  
@@ -146,7 +138,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     int width, height, numChannels;
-    unsigned char* data = stbi_load("textures/default.png", &width, &height, &numChannels, 0);
+    unsigned char* data = stbi_load("textures/crate.png", &width, &height, &numChannels, 0);
     if (data == nullptr)
     {
         // TODO: Error here
@@ -155,7 +147,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(data);
 
-    // Texture 2
+    // Specular map texture
+    stbi_set_flip_vertically_on_load(true);  
     GLuint texture2;
     glGenTextures(1, &texture2);
     glBindTexture(GL_TEXTURE_2D, texture2);
@@ -163,7 +156,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    data = stbi_load("textures/knob.png", &width, &height, &numChannels, 0);
+    data = stbi_load("textures/crate_specular.png", &width, &height, &numChannels, 0);
     if (data == nullptr)
     {
         // TODO: Error here
@@ -177,17 +170,36 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     shader.SetInt("uTexture1", 0);
     shader.SetInt("uTexture2", 1);
 
+    const glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
     Camera camera(glm::vec3(0.f, 0.f, 3.f));
     float deltaTime = 0.f;
     float lastFrame = 0.f;
 
-    // glm::mat4 view = glm::mat4(1.0f);
-    // view = glm::translate(view, glm::vec3(0.f, 0.f, -3.0f));
     glm::mat4 projection = glm::perspective(glm::radians(camera.mZoom), 1280.f / 720.f, 0.1f, 100.f);
+    shader.Use();
     GLuint transformLocV = glGetUniformLocation(shader.mShaderID, "view");
-    // glUniformMatrix4fv(transformLocV, 1, GL_FALSE, glm::value_ptr(view));
     GLuint transformLocP = glGetUniformLocation(shader.mShaderID, "projection");
     glUniformMatrix4fv(transformLocP, 1, GL_FALSE, glm::value_ptr(projection));
+    lightingShader.Use();
+    GLuint transformLocVLighting = glGetUniformLocation(lightingShader.mShaderID, "view");
+    GLuint transformLocPLighting = glGetUniformLocation(lightingShader.mShaderID, "projection");
+    glUniformMatrix4fv(transformLocPLighting, 1, GL_FALSE, glm::value_ptr(projection));
+    lightSourceShader.Use();
+    GLuint transformLocVSource = glGetUniformLocation(lightSourceShader.mShaderID, "view");
+    GLuint transformLocPSource = glGetUniformLocation(lightSourceShader.mShaderID, "projection");
+    glUniformMatrix4fv(transformLocPSource, 1, GL_FALSE, glm::value_ptr(projection));
+
+    lightingShader.Use();
+    // lightingShader.SetVec3("material.mAmbient", 1.0f, 0.5f, 0.31f);
+    // lightingShader.SetVec3("material.mDiffuse", 1.0f, 0.5f, 0.31f);
+    lightingShader.SetInt("material.mDiffuse", 0);
+    lightingShader.SetInt("material.mSpecular", 1);
+    // lightingShader.SetVec3("material.mSpecular", 0.5f, 0.5f, 0.5f);
+    lightingShader.SetVec3("light.mPosition", lightPos.x, lightPos.y, lightPos.z);
+    lightingShader.SetVec3("light.mAmbient", 0.2f, 0.2f, 0.2f);
+    lightingShader.SetVec3("light.mDiffuse", 0.5f, 0.5f, 0.5f);
+    lightingShader.SetVec3("light.mSpecular", 1.0f, 1.0f, 1.0f);
+    lightingShader.SetFloat("material.mShininess", 32.0f);
 
     bool forwardInput = false;
     bool leftInput = false;
@@ -269,7 +281,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             {
                 camera.ProcessMouseScroll(static_cast<float>(event.wheel.y));
                 projection = glm::perspective(glm::radians(camera.mZoom), 1280.f / 720.f, 0.1f, 100.f);
+                shader.Use();
                 glUniformMatrix4fv(transformLocP, 1, GL_FALSE, glm::value_ptr(projection));
+                lightingShader.Use();
+                glUniformMatrix4fv(transformLocPLighting, 1, GL_FALSE, glm::value_ptr(projection));
             }
         }
 
@@ -296,13 +311,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
         // Matrix transforms
         const float angle = static_cast<float>(SDL_GetTicks()) / 1000.f;
-        // glm::mat4 model = glm::mat4(1.0f);
-        // model = glm::rotate(model, angle, glm::vec3(0.5f, 1.f, 0.f));
         GLuint transformLocM = glGetUniformLocation(shader.mShaderID, "model");
-        // glUniformMatrix4fv(transformLocM, 1, GL_FALSE, glm::value_ptr(model));
+        GLuint transformLocMLighting = glGetUniformLocation(lightingShader.mShaderID, "model");
+        GLuint transformLocMSource = glGetUniformLocation(lightSourceShader.mShaderID, "model");
 
         // Render the rectangle
-        shader.Use();
+        // shader.Use();
+        lightingShader.Use();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
         glActiveTexture(GL_TEXTURE1);
@@ -312,16 +327,36 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         // glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glm::mat4 view = camera.GetViewMatrix();
+        shader.Use();
         glUniformMatrix4fv(transformLocV, 1, GL_FALSE, glm::value_ptr(view));
-        for (unsigned int i = 0; i < 10; ++i)
-        {
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, cubePositions[i]);
-            float angle = static_cast<float>(i) * 20.f;
-            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, 0.3f, 0.5f));
-            glUniformMatrix4fv(transformLocM, 1, GL_FALSE, glm::value_ptr(model));
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
+        lightingShader.Use();
+        glUniformMatrix4fv(transformLocVLighting, 1, GL_FALSE, glm::value_ptr(view));
+        lightSourceShader.Use();
+        glUniformMatrix4fv(transformLocVSource, 1, GL_FALSE, glm::value_ptr(view));
+
+        // Draw cubes
+        glm::mat4 model = glm::mat4(1.0f);
+        // model = glm::translate(model, cubePositions[i]);
+        // float angle = static_cast<float>(i) * 20.f;
+        // model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, 0.3f, 0.5f));
+        // glUniformMatrix4fv(transformLocM, 1, GL_FALSE, glm::value_ptr(model));
+        lightingShader.Use();
+        GLuint lightPosLoc = glGetUniformLocation(lightingShader.mShaderID, "lightPos");
+        GLuint viewPosLoc = glGetUniformLocation(lightingShader.mShaderID, "viewPos");
+        // glUniform3fv(lightPosLoc, 3, glm::value_ptr(lightPos));
+        glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
+        glUniform3f(viewPosLoc, camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
+        glUniformMatrix4fv(transformLocMLighting, 1, GL_FALSE, glm::value_ptr(model));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // Draw lights
+        lightSourceShader.Use();
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, lightPos);
+        model = glm::scale(model, glm::vec3(0.2f));
+        glUniformMatrix4fv(transformLocMSource, 1, GL_FALSE, glm::value_ptr(model));
+        glBindVertexArray(lightVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
         SDL_GL_SwapWindow(window);
     }
