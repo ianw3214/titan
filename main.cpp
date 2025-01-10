@@ -189,17 +189,41 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     GLuint transformLocPSource = glGetUniformLocation(lightSourceShader.mShaderID, "projection");
     glUniformMatrix4fv(transformLocPSource, 1, GL_FALSE, glm::value_ptr(projection));
 
+    glm::vec3 pointLightPositions[] = {
+        glm::vec3( 0.7f,  0.2f,  2.0f),
+        glm::vec3( 2.3f, -3.3f, -4.0f),
+        glm::vec3(-4.0f,  2.0f, -12.0f),
+        glm::vec3( 0.0f,  0.0f, -3.0f)
+    }; 
+
+    // Set light parameters
     lightingShader.Use();
-    // lightingShader.SetVec3("material.mAmbient", 1.0f, 0.5f, 0.31f);
-    // lightingShader.SetVec3("material.mDiffuse", 1.0f, 0.5f, 0.31f);
     lightingShader.SetInt("material.mDiffuse", 0);
     lightingShader.SetInt("material.mSpecular", 1);
-    // lightingShader.SetVec3("material.mSpecular", 0.5f, 0.5f, 0.5f);
-    lightingShader.SetVec3("light.mPosition", lightPos.x, lightPos.y, lightPos.z);
-    lightingShader.SetVec3("light.mAmbient", 0.2f, 0.2f, 0.2f);
-    lightingShader.SetVec3("light.mDiffuse", 0.5f, 0.5f, 0.5f);
-    lightingShader.SetVec3("light.mSpecular", 1.0f, 1.0f, 1.0f);
     lightingShader.SetFloat("material.mShininess", 32.0f);
+
+    lightingShader.SetVec3("directionalLight.mDirection", 0.f, -1.f, 0.f);
+    lightingShader.SetVec3("directionalLight.mAmbient", 0.2f, 0.2f, 0.2f);
+    lightingShader.SetVec3("directionalLight.mDiffuse", 0.5f, 0.5f, 0.5f);
+    lightingShader.SetVec3("directionalLight.mSpecular", 1.f, 1.f, 1.f);
+    for (int i = 0; i < sizeof(pointLightPositions); ++i)
+    {
+        glm::vec3 lightPos = pointLightPositions[i];
+        lightingShader.SetVec3("pointLights[" + std::to_string(i) + "].mPosition", lightPos.x, lightPos.y, lightPos.z);
+        lightingShader.SetFloat("pointLights[" + std::to_string(i) + "].mConstant", 1.0f);
+        lightingShader.SetFloat("pointLights[" + std::to_string(i) + "].mLinear", 0.22f);
+        lightingShader.SetFloat("pointLights[" + std::to_string(i) + "].mQuadratic", 0.2f);
+        lightingShader.SetVec3("pointLights[" + std::to_string(i) + "].mAmbient", 0.f, 0.f, 0.f);
+        lightingShader.SetVec3("pointLights[" + std::to_string(i) + "].mDiffuse", 0.5f, 0.5f, 0.5f);
+        lightingShader.SetVec3("pointLights[" + std::to_string(i) + "].mSpecular", 1.f, 1.f, 1.f);
+    }
+    lightingShader.SetVec3("spotLight.mPosition", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
+    lightingShader.SetVec3("spotLight.mDirection", camera.mFront.x, camera.mFront.y, camera.mFront.z);
+    lightingShader.SetFloat("spotLight.mCutoff", glm::cos(glm::radians(8.f)));
+    lightingShader.SetFloat("spotLight.mOuterCutoff", glm::cos(glm::radians(12.5f)));
+    lightingShader.SetVec3("spotLight.mAmbient", 0.f, 0.f, 0.f);
+    lightingShader.SetVec3("spotLight.mDiffuse", 0.5f, 0.5f, 0.5f);
+    lightingShader.SetVec3("spotLight.mSpecular", 1.f, 1.f, 1.f);
 
     bool forwardInput = false;
     bool leftInput = false;
@@ -346,17 +370,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         // glUniform3fv(lightPosLoc, 3, glm::value_ptr(lightPos));
         glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
         glUniform3f(viewPosLoc, camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
+        lightingShader.SetVec3("spotLight.mPosition", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
+        lightingShader.SetVec3("spotLight.mDirection", camera.mFront.x, camera.mFront.y, camera.mFront.z);
         glUniformMatrix4fv(transformLocMLighting, 1, GL_FALSE, glm::value_ptr(model));
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // Draw lights
         lightSourceShader.Use();
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, lightPos);
-        model = glm::scale(model, glm::vec3(0.2f));
-        glUniformMatrix4fv(transformLocMSource, 1, GL_FALSE, glm::value_ptr(model));
-        glBindVertexArray(lightVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        for (int i = 0; i < sizeof(pointLightPositions); ++i) 
+        {
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, pointLightPositions[i]);
+            model = glm::scale(model, glm::vec3(0.2f));
+            glUniformMatrix4fv(transformLocMSource, 1, GL_FALSE, glm::value_ptr(model));
+            glBindVertexArray(lightVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
         SDL_GL_SwapWindow(window);
     }
