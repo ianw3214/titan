@@ -56,9 +56,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    Shader shader("shaders/shader.vert", "shaders/shader.frag");
     Shader lightingShader("shaders/simple.vert", "shaders/lighting.frag");
-    Shader lightSourceShader("shaders/simple.vert", "shaders/light.frag");
 
     float vertices[] = {
         // positions          // normals           // texture coords
@@ -120,14 +118,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    // Light VAO
-    GLuint lightVAO;
-    glGenVertexArrays(1, &lightVAO);
-    glBindVertexArray(lightVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO); // Re-use the same VBO as the container cube
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
     // Texture loading
     stbi_set_flip_vertically_on_load(true);  
     GLuint texture;
@@ -165,30 +155,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(data);
 
-    // Texture uniforms
-    shader.Use();
-    shader.SetInt("uTexture1", 0);
-    shader.SetInt("uTexture2", 1);
-
     const glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
     Camera camera(glm::vec3(0.f, 0.f, 3.f));
     float deltaTime = 0.f;
     float lastFrame = 0.f;
 
     glm::mat4 projection = glm::perspective(glm::radians(camera.mZoom), 1280.f / 720.f, 0.1f, 100.f);
-    shader.Use();
-    GLuint transformLocV = glGetUniformLocation(shader.mShaderID, "view");
-    GLuint transformLocP = glGetUniformLocation(shader.mShaderID, "projection");
-    glUniformMatrix4fv(transformLocP, 1, GL_FALSE, glm::value_ptr(projection));
     lightingShader.Use();
+    GLuint transformLocMLighting = glGetUniformLocation(lightingShader.mShaderID, "model");
     GLuint transformLocVLighting = glGetUniformLocation(lightingShader.mShaderID, "view");
     GLuint transformLocPLighting = glGetUniformLocation(lightingShader.mShaderID, "projection");
     glUniformMatrix4fv(transformLocPLighting, 1, GL_FALSE, glm::value_ptr(projection));
-    lightSourceShader.Use();
-    GLuint transformLocVSource = glGetUniformLocation(lightSourceShader.mShaderID, "view");
-    GLuint transformLocPSource = glGetUniformLocation(lightSourceShader.mShaderID, "projection");
-    glUniformMatrix4fv(transformLocPSource, 1, GL_FALSE, glm::value_ptr(projection));
-
+    
     glm::vec3 pointLightPositions[] = {
         glm::vec3( 0.7f,  0.2f,  2.0f),
         glm::vec3( 2.3f, -3.3f, -4.0f),
@@ -198,8 +176,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     // Set light parameters
     lightingShader.Use();
-    lightingShader.SetInt("material.mDiffuse", 0);
-    lightingShader.SetInt("material.mSpecular", 1);
+    lightingShader.SetInt("material.texture_diffuse1", 0);
+    lightingShader.SetInt("material.texture_specular1", 1);
     lightingShader.SetFloat("material.mShininess", 32.0f);
 
     lightingShader.SetVec3("directionalLight.mDirection", 0.f, -1.f, 0.f);
@@ -305,8 +283,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             {
                 camera.ProcessMouseScroll(static_cast<float>(event.wheel.y));
                 projection = glm::perspective(glm::radians(camera.mZoom), 1280.f / 720.f, 0.1f, 100.f);
-                shader.Use();
-                glUniformMatrix4fv(transformLocP, 1, GL_FALSE, glm::value_ptr(projection));
                 lightingShader.Use();
                 glUniformMatrix4fv(transformLocPLighting, 1, GL_FALSE, glm::value_ptr(projection));
             }
@@ -335,57 +311,24 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
         // Matrix transforms
         const float angle = static_cast<float>(SDL_GetTicks()) / 1000.f;
-        GLuint transformLocM = glGetUniformLocation(shader.mShaderID, "model");
-        GLuint transformLocMLighting = glGetUniformLocation(lightingShader.mShaderID, "model");
-        GLuint transformLocMSource = glGetUniformLocation(lightSourceShader.mShaderID, "model");
+        glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 view = camera.GetViewMatrix();
 
-        // Render the rectangle
-        // shader.Use();
         lightingShader.Use();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture2);
         glBindVertexArray(VAO);
-        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        // glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        glm::mat4 view = camera.GetViewMatrix();
-        shader.Use();
-        glUniformMatrix4fv(transformLocV, 1, GL_FALSE, glm::value_ptr(view));
-        lightingShader.Use();
-        glUniformMatrix4fv(transformLocVLighting, 1, GL_FALSE, glm::value_ptr(view));
-        lightSourceShader.Use();
-        glUniformMatrix4fv(transformLocVSource, 1, GL_FALSE, glm::value_ptr(view));
-
+        
         // Draw cubes
-        glm::mat4 model = glm::mat4(1.0f);
-        // model = glm::translate(model, cubePositions[i]);
-        // float angle = static_cast<float>(i) * 20.f;
-        // model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, 0.3f, 0.5f));
-        // glUniformMatrix4fv(transformLocM, 1, GL_FALSE, glm::value_ptr(model));
-        lightingShader.Use();
-        GLuint lightPosLoc = glGetUniformLocation(lightingShader.mShaderID, "lightPos");
-        GLuint viewPosLoc = glGetUniformLocation(lightingShader.mShaderID, "viewPos");
-        // glUniform3fv(lightPosLoc, 3, glm::value_ptr(lightPos));
-        glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
-        glUniform3f(viewPosLoc, camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
+        lightingShader.SetVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);
+        lightingShader.SetVec3("viewPos", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
         lightingShader.SetVec3("spotLight.mPosition", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
         lightingShader.SetVec3("spotLight.mDirection", camera.mFront.x, camera.mFront.y, camera.mFront.z);
         glUniformMatrix4fv(transformLocMLighting, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(transformLocVLighting, 1, GL_FALSE, glm::value_ptr(view));
         glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        // Draw lights
-        lightSourceShader.Use();
-        for (int i = 0; i < sizeof(pointLightPositions); ++i) 
-        {
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, pointLightPositions[i]);
-            model = glm::scale(model, glm::vec3(0.2f));
-            glUniformMatrix4fv(transformLocMSource, 1, GL_FALSE, glm::value_ptr(model));
-            glBindVertexArray(lightVAO);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
 
         SDL_GL_SwapWindow(window);
     }
