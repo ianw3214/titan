@@ -1,1 +1,8 @@
-target_sources(Titan PRIVATE shader.h shader.cpp)
+target_sources(Titan PRIVATE 
+    shader.h
+    mesh.h
+    model.h)
+target_sources(Titan PRIVATE 
+    shader.cpp
+    mesh.cpp
+    model.cpp)

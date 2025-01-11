@@ -3,3 +3,6 @@
 build/
 
 old/
+
+# Ignore assets for now since they take up hella space
+assets/
