@@ -14,6 +14,8 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std:
 // =====================================================
 void Mesh::Draw(Shader& shader)
 {
+    shader.Use();
+    
     unsigned int numDiffuse = 1;
     unsigned int numSpecular = 1;
     for (unsigned int i = 0; i < mTextures.size(); ++i)

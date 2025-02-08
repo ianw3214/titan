@@ -1,0 +1,2 @@
+target_sourceS(Titan PRIVATE cube.h)
+target_sourceS(Titan PRIVATE cube.cpp)

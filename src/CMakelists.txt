@@ -6,3 +6,6 @@ target_sources(Titan PRIVATE
     shader.cpp
     mesh.cpp
     model.cpp)
+
+add_subdirectory(lighting)
+add_subdirectory(shapes)

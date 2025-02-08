@@ -15,6 +15,9 @@
 #include "camera.h"
 #include "shader.h"
 #include "model.h"
+#include "shapes/cube.h"
+
+#include "lighting/directionalLight.h"
 
 // =====================================================
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
@@ -50,12 +53,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     glViewport(0, 0, 1280, 720);  
     glEnable(GL_DEPTH_TEST); 
 
+    glDepthFunc(GL_ALWAYS); 
+
     // Wifreframe
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     Shader lightingShader("shaders/simple.vert", "shaders/lighting.frag");
     Model backpack("assets/backpack/backpack.obj");
+    Cube cube(glm::vec3(10.f, 0.f, 0.f));
+    Cube cube2(glm::vec3(100.f, 0.f, 0.f));
+    cube.SetTexture("textures/crate.png");
+    cube2.SetTexture("textures/crate.png");
 
     const glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
     Camera camera(glm::vec3(0.f, 0.f, 3.f));
@@ -69,6 +78,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     GLuint transformLocPLighting = glGetUniformLocation(lightingShader.mShaderID, "projection");
     glUniformMatrix4fv(transformLocPLighting, 1, GL_FALSE, glm::value_ptr(projection));
     
+    DirectionalLight directionalLight(glm::vec3(0.f, -1.f, 0.f));
+
     glm::vec3 pointLightPositions[] = {
         glm::vec3( 0.7f,  0.2f,  2.0f),
         glm::vec3( 2.3f, -3.3f, -4.0f),
@@ -78,14 +89,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     // Set light parameters
     lightingShader.Use();
-    lightingShader.SetInt("material.texture_diffuse1", 0);
-    lightingShader.SetInt("material.texture_specular1", 1);
     lightingShader.SetFloat("material.mShininess", 32.0f);
 
-    lightingShader.SetVec3("directionalLight.mDirection", 0.f, -1.f, 0.f);
-    lightingShader.SetVec3("directionalLight.mAmbient", 0.2f, 0.2f, 0.2f);
-    lightingShader.SetVec3("directionalLight.mDiffuse", 0.5f, 0.5f, 0.5f);
-    lightingShader.SetVec3("directionalLight.mSpecular", 1.f, 1.f, 1.f);
+    directionalLight.SetShaderUniforms(lightingShader);
     for (int i = 0; i < sizeof(pointLightPositions); ++i)
     {
         glm::vec3 lightPos = pointLightPositions[i];
@@ -224,6 +230,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         glUniformMatrix4fv(transformLocMLighting, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(transformLocVLighting, 1, GL_FALSE, glm::value_ptr(view));
         backpack.Draw(lightingShader);
+
+        cube.Draw(lightingShader);
+        cube2.Draw(lightingShader);
 
         SDL_GL_SwapWindow(window);
     }

@@ -9,6 +9,7 @@
 // =====================================================
 unsigned int TextureFromFile(const char* file, const std::string& directory)
 {
+    // TODO: Refactor the image loading
     std::string fileName = directory + '/' + file;
     GLuint textureID;
     glGenTextures(1, &textureID);

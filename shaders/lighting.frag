@@ -1,6 +1,8 @@
 #version 400 core
 
 struct Material {
+    // Multiple diffuse/specular maps are used for when the mesh is composed of many textures
+    //  - See Mesh::Draw for how these are set in code
     sampler2D texture_diffuse1;
     sampler2D texture_diffuse2;
     sampler2D texture_diffuse3;
@@ -119,6 +121,16 @@ vec3 calculateSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir
     }
 }
 
+float near = 0.1; 
+float far  = 100.0; 
+  
+// ====================================================
+float LinearizeDepth(float depth) 
+{
+    float z = depth * 2.0 - 1.0; // back to NDC 
+    return (2.0 * near * far) / (far + near - z * (far - near));	
+}
+
 // ====================================================
 void main() {
 
@@ -133,4 +145,8 @@ void main() {
     result += calculateSpotLight(spotLight, norm, FragPos, viewDir);
 
     FragColor = vec4(result, 1.0);
+
+    // Visualizing depth
+    // float depth = LinearizeDepth(gl_FragCoord.z) / far; // divide by far for demonstration
+    // FragColor = vec4(vec3(depth), 1.0);
 }

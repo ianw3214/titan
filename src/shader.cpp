@@ -96,3 +96,10 @@ void Shader::SetVec3(const std::string& name, float x, float y, float z)
     Use();
     glUniform3f(glGetUniformLocation(mShaderID, name.c_str()), x, y, z);
 }
+
+// =====================================================
+void Shader::SetVec3(const std::string& name, const glm::vec3& value)
+{
+    Use();
+    glUniform3f(glGetUniformLocation(mShaderID, name.c_str()), value.x, value.y, value.z);
+}

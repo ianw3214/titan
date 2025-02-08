@@ -1,0 +1,8 @@
+target_sources(Titan PRIVATE 
+    directionalLight.h
+    pointLight.h
+    spotLight.h)
+target_sources(Titan PRIVATE
+    directionalLight.cpp
+    pointLight.cpp
+    spotLight.cpp)
