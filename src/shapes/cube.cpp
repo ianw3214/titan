@@ -78,7 +78,7 @@ Cube::Cube(glm::vec3 position)
 }
 
 // =====================================================
-void Cube::Draw(Shader& shader)
+void Cube::Draw(Shader& shader, float scale)
 {
     shader.Use();
 
@@ -89,6 +89,10 @@ void Cube::Draw(Shader& shader)
 
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, mPosition);
+    if (scale != 1.f)
+    {
+        model = glm::scale(model, glm::vec3(scale));
+    }
     // TODO: Matrix uniform setting in shader class
     GLuint modelLoc = glGetUniformLocation(shader.mShaderID, "model");
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));

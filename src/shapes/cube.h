@@ -11,7 +11,7 @@ class Shader;
 class Cube {
 public:
     Cube(glm::vec3 position = glm::vec3(0.f));
-    void Draw(Shader& shader);
+    void Draw(Shader& shader, float scale = 1.f);
 
     void SetTexture(const std::string& path);
 

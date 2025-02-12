@@ -52,12 +52,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     glViewport(0, 0, 1280, 720);  
     glEnable(GL_DEPTH_TEST); 
+    glEnable(GL_STENCIL_TEST);
 
-    glDepthFunc(GL_ALWAYS); 
+    // glDepthFunc(GL_ALWAYS); 
 
     // Wifreframe
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    Shader singleColourShader("shaders/simple.vert", "shaders/singleColour.frag");
 
     Shader lightingShader("shaders/simple.vert", "shaders/lighting.frag");
     Model backpack("assets/backpack/backpack.obj");
@@ -78,6 +81,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     GLuint transformLocPLighting = glGetUniformLocation(lightingShader.mShaderID, "projection");
     glUniformMatrix4fv(transformLocPLighting, 1, GL_FALSE, glm::value_ptr(projection));
     
+    singleColourShader.Use();
+    GLuint transformLocMSimple = glGetUniformLocation(singleColourShader.mShaderID, "model");
+    GLuint transformLocVSimple = glGetUniformLocation(singleColourShader.mShaderID, "view");
+    GLuint transformLocPSimple = glGetUniformLocation(singleColourShader.mShaderID, "projection");
+    glUniformMatrix4fv(transformLocPSimple, 1, GL_FALSE, glm::value_ptr(projection));
+    
+
     DirectionalLight directionalLight(glm::vec3(0.f, -1.f, 0.f));
 
     glm::vec3 pointLightPositions[] = {
@@ -193,6 +203,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                 projection = glm::perspective(glm::radians(camera.mZoom), 1280.f / 720.f, 0.1f, 100.f);
                 lightingShader.Use();
                 glUniformMatrix4fv(transformLocPLighting, 1, GL_FALSE, glm::value_ptr(projection));
+                singleColourShader.Use();
+                glUniformMatrix4fv(transformLocPSimple, 1, GL_FALSE, glm::value_ptr(projection));
             }
         }
 
@@ -215,7 +227,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
         // Rendering here...
         glClearColor(0.2, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
 
         // Matrix transforms
         const float angle = static_cast<float>(SDL_GetTicks()) / 1000.f;
@@ -231,8 +243,24 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         glUniformMatrix4fv(transformLocVLighting, 1, GL_FALSE, glm::value_ptr(view));
         backpack.Draw(lightingShader);
 
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilMask(0xFF);
         cube.Draw(lightingShader);
         cube2.Draw(lightingShader);
+
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);
+        glDisable(GL_DEPTH_TEST);
+        singleColourShader.Use();
+        glUniformMatrix4fv(transformLocMSimple, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(transformLocVSimple, 1, GL_FALSE, glm::value_ptr(view));
+        cube.Draw(singleColourShader, 1.2f);
+        cube2.Draw(singleColourShader, 1.2f);
+
+        glStencilMask(0xFF);
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glEnable(GL_DEPTH_TEST);
 
         SDL_GL_SwapWindow(window);
     }
