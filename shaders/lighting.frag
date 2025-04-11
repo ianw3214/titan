@@ -144,7 +144,7 @@ void main() {
     }
     result += calculateSpotLight(spotLight, norm, FragPos, viewDir);
 
-    FragColor = vec4(result, 1.0);
+    FragColor = vec4(result, texture(material.texture_diffuse1, TexCoords).a);
 
     // Visualizing depth
     // float depth = LinearizeDepth(gl_FragCoord.z) / far; // divide by far for demonstration

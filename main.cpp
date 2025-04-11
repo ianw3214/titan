@@ -53,7 +53,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     glViewport(0, 0, 1280, 720);  
     glEnable(GL_DEPTH_TEST); 
     glEnable(GL_STENCIL_TEST);
+    glEnable(GL_BLEND);
 
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // glDepthFunc(GL_ALWAYS); 
 
     // Wifreframe
@@ -63,11 +65,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     Shader singleColourShader("shaders/simple.vert", "shaders/singleColour.frag");
 
     Shader lightingShader("shaders/simple.vert", "shaders/lighting.frag");
-    Model backpack("assets/backpack/backpack.obj");
+    // Model backpack("assets/backpack/backpack.obj");
     Cube cube(glm::vec3(10.f, 0.f, 0.f));
     Cube cube2(glm::vec3(100.f, 0.f, 0.f));
+    Cube cube3(glm::vec3(0.f, 0.f, 0.f));
+    Cube cube4(glm::vec3(-1.f, -1.f, -1.f));
     cube.SetTexture("textures/crate.png");
     cube2.SetTexture("textures/crate.png");
+    cube3.SetTexture("textures/window.png");
+    cube4.SetTexture("textures/grass.png");
 
     const glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
     Camera camera(glm::vec3(0.f, 0.f, 3.f));
@@ -241,7 +247,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         lightingShader.SetVec3("spotLight.mDirection", camera.mFront.x, camera.mFront.y, camera.mFront.z);
         glUniformMatrix4fv(transformLocMLighting, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(transformLocVLighting, 1, GL_FALSE, glm::value_ptr(view));
-        backpack.Draw(lightingShader);
+        // backpack.Draw(lightingShader);
 
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         glStencilFunc(GL_ALWAYS, 1, 0xFF);
@@ -261,6 +267,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         glStencilMask(0xFF);
         glStencilFunc(GL_ALWAYS, 1, 0xFF);
         glEnable(GL_DEPTH_TEST);
+
+        // This needs to be properly sorted in the general case
+        cube4.Draw(lightingShader);
+        cube3.Draw(lightingShader);
 
         SDL_GL_SwapWindow(window);
     }
