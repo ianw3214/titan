@@ -8,16 +8,17 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-#include "camera.h"
 #include "shader.h"
-#include "model.h"
-#include "shapes/cube.h"
+#include "fluid/simulation.h"
 
-#include "lighting/directionalLight.h"
+static float vertices[] = {
+    -1.f, -1.f, 0.f,
+    -1.f, 1.f, 0.f,
+    1.f, 1.f, 0.f,
+    -1.f, -1.f, 0.f,
+    1.f, 1.f, 0.f,
+    1.f, -1.f, 0.f
+};
 
 // =====================================================
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
@@ -51,86 +52,49 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     }
 
     glViewport(0, 0, 1280, 720);  
-    glEnable(GL_DEPTH_TEST); 
+    // glEnable(GL_DEPTH_TEST); 
     glEnable(GL_STENCIL_TEST);
     glEnable(GL_BLEND);
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // glDepthFunc(GL_ALWAYS); 
 
     // Wifreframe
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    Shader singleColourShader("shaders/simple.vert", "shaders/singleColour.frag");
+    Shader sphereShader("shaders/fluid/sphere.vert", "shaders/fluid/sphere.frag");
+    sphereShader.SetFloat("screenWidth", 1280.f);
+    sphereShader.SetFloat("screenHeight", 720.f);
+    sphereShader.SetFloat("sphereSize", 0.1f);
+    sphereShader.SetFloat("zoom", 50.f);
 
-    Shader lightingShader("shaders/simple.vert", "shaders/lighting.frag");
-    // Model backpack("assets/backpack/backpack.obj");
-    Cube cube(glm::vec3(10.f, 0.f, 0.f));
-    Cube cube2(glm::vec3(100.f, 0.f, 0.f));
-    Cube cube3(glm::vec3(0.f, 0.f, 0.f));
-    Cube cube4(glm::vec3(-1.f, -1.f, -1.f));
-    cube.SetTexture("textures/crate.png");
-    cube2.SetTexture("textures/crate.png");
-    cube3.SetTexture("textures/window.png");
-    cube4.SetTexture("textures/grass.png");
+    Shader densityShader("shaders/fluid/sphere.vert", "shaders/fluid/sphere_density.frag");
+    densityShader.SetFloat("screenWidth", 1280.f);
+    densityShader.SetFloat("screenHeight", 720.f);
+    densityShader.SetFloat("sphereSize", 1.2f);
+    densityShader.SetFloat("zoom", 50.f);
 
-    const glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-    Camera camera(glm::vec3(0.f, 0.f, 3.f));
+    Shader pressureShader("shaders/fluid/pressure.vert", "shaders/fluid/pressure.frag");
+    pressureShader.SetFloat("screenWidth", 1280.f);
+    pressureShader.SetFloat("screenHeight", 720.f);
+    pressureShader.SetFloat("zoom", 50.f);
+
     float deltaTime = 0.f;
     float lastFrame = 0.f;
 
-    glm::mat4 projection = glm::perspective(glm::radians(camera.mZoom), 1280.f / 720.f, 0.1f, 100.f);
-    lightingShader.Use();
-    GLuint transformLocMLighting = glGetUniformLocation(lightingShader.mShaderID, "model");
-    GLuint transformLocVLighting = glGetUniformLocation(lightingShader.mShaderID, "view");
-    GLuint transformLocPLighting = glGetUniformLocation(lightingShader.mShaderID, "projection");
-    glUniformMatrix4fv(transformLocPLighting, 1, GL_FALSE, glm::value_ptr(projection));
-    
-    singleColourShader.Use();
-    GLuint transformLocMSimple = glGetUniformLocation(singleColourShader.mShaderID, "model");
-    GLuint transformLocVSimple = glGetUniformLocation(singleColourShader.mShaderID, "view");
-    GLuint transformLocPSimple = glGetUniformLocation(singleColourShader.mShaderID, "projection");
-    glUniformMatrix4fv(transformLocPSimple, 1, GL_FALSE, glm::value_ptr(projection));
-    
+    GLuint VAO;
+    GLuint VBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)0);
+    glEnableVertexAttribArray(0);
 
-    DirectionalLight directionalLight(glm::vec3(0.f, -1.f, 0.f));
-
-    glm::vec3 pointLightPositions[] = {
-        glm::vec3( 0.7f,  0.2f,  2.0f),
-        glm::vec3( 2.3f, -3.3f, -4.0f),
-        glm::vec3(-4.0f,  2.0f, -12.0f),
-        glm::vec3( 0.0f,  0.0f, -3.0f)
-    }; 
-
-    // Set light parameters
-    lightingShader.Use();
-    lightingShader.SetFloat("material.mShininess", 32.0f);
-
-    directionalLight.SetShaderUniforms(lightingShader);
-    for (int i = 0; i < sizeof(pointLightPositions); ++i)
-    {
-        glm::vec3 lightPos = pointLightPositions[i];
-        lightingShader.SetVec3("pointLights[" + std::to_string(i) + "].mPosition", lightPos.x, lightPos.y, lightPos.z);
-        lightingShader.SetFloat("pointLights[" + std::to_string(i) + "].mConstant", 1.0f);
-        lightingShader.SetFloat("pointLights[" + std::to_string(i) + "].mLinear", 0.22f);
-        lightingShader.SetFloat("pointLights[" + std::to_string(i) + "].mQuadratic", 0.2f);
-        lightingShader.SetVec3("pointLights[" + std::to_string(i) + "].mAmbient", 0.f, 0.f, 0.f);
-        lightingShader.SetVec3("pointLights[" + std::to_string(i) + "].mDiffuse", 0.5f, 0.5f, 0.5f);
-        lightingShader.SetVec3("pointLights[" + std::to_string(i) + "].mSpecular", 1.f, 1.f, 1.f);
-    }
-    lightingShader.SetVec3("spotLight.mPosition", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
-    lightingShader.SetVec3("spotLight.mDirection", camera.mFront.x, camera.mFront.y, camera.mFront.z);
-    lightingShader.SetFloat("spotLight.mCutoff", glm::cos(glm::radians(8.f)));
-    lightingShader.SetFloat("spotLight.mOuterCutoff", glm::cos(glm::radians(12.5f)));
-    lightingShader.SetVec3("spotLight.mAmbient", 0.f, 0.f, 0.f);
-    lightingShader.SetVec3("spotLight.mDiffuse", 0.5f, 0.5f, 0.5f);
-    lightingShader.SetVec3("spotLight.mSpecular", 1.f, 1.f, 1.f);
-
-    bool forwardInput = false;
-    bool leftInput = false;
-    bool backInput = false;
-    bool rightInput = false;
+    FluidSimulation simulation;
+    simulation.SetBounds(9.f, 9.f);
+    simulation.Initialize(121);
 
     bool running = true;
     while (running)
@@ -161,116 +125,41 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                 {
                     running = false;
                 }
-                if (event.key.keysym.scancode == SDL_SCANCODE_W)
-                {
-                    forwardInput = true;
-                }
-                if (event.key.keysym.scancode == SDL_SCANCODE_S)
-                {
-                    backInput = true;
-                }
-                if (event.key.keysym.scancode == SDL_SCANCODE_A)
-                {
-                    leftInput = true;
-                }
-                if (event.key.keysym.scancode == SDL_SCANCODE_D)
-                {
-                    rightInput = true;
-                }
-            }
-            if (event.type == SDL_KEYUP)
-            {
-                if (event.key.keysym.scancode == SDL_SCANCODE_W)
-                {
-                    forwardInput = false;
-                }
-                if (event.key.keysym.scancode == SDL_SCANCODE_S)
-                {
-                    backInput = false;
-                }
-                if (event.key.keysym.scancode == SDL_SCANCODE_A)
-                {
-                    leftInput = false;
-                }
-                if (event.key.keysym.scancode == SDL_SCANCODE_D)
-                {
-                    rightInput = false;
-                }
-            }
-            if (event.type == SDL_MOUSEMOTION)
-            {
-                float xOffset = static_cast<float>(event.motion.xrel);
-                float yOffset = static_cast<float>(event.motion.yrel);
-                camera.ProcessMouseMovement(xOffset, yOffset);
-            }
-            if (event.type == SDL_MOUSEWHEEL)
-            {
-                camera.ProcessMouseScroll(static_cast<float>(event.wheel.y));
-                projection = glm::perspective(glm::radians(camera.mZoom), 1280.f / 720.f, 0.1f, 100.f);
-                lightingShader.Use();
-                glUniformMatrix4fv(transformLocPLighting, 1, GL_FALSE, glm::value_ptr(projection));
-                singleColourShader.Use();
-                glUniformMatrix4fv(transformLocPSimple, 1, GL_FALSE, glm::value_ptr(projection));
             }
         }
 
-        if (forwardInput)
+        simulation.Update(deltaTime);
+
+        for (size_t i = 0; i < simulation.GetPositions().size(); ++i)
         {
-            camera.Move(CameraMovement::FORWARD, deltaTime);
-        }
-        if (backInput)
-        {
-            camera.Move(CameraMovement::BACKWARD, deltaTime);
-        }
-        if (leftInput)
-        {
-            camera.Move(CameraMovement::LEFT, deltaTime);
-        }
-        if (rightInput)
-        {
-            camera.Move(CameraMovement::RIGHT, deltaTime);
+            const glm::vec2 pos = simulation.GetPositions()[i];
+            const std::string name = std::string("particles[" + std::to_string(i) + ']');
+            pressureShader.SetVec3(name, glm::vec3(pos.x, pos.y, 0.f));
+            
         }
 
         // Rendering here...
-        glClearColor(0.2, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.01, 0.0f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
 
-        // Matrix transforms
-        const float angle = static_cast<float>(SDL_GetTicks()) / 1000.f;
-        glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 view = camera.GetViewMatrix();
+        glBindVertexArray(VAO);
+        pressureShader.Use();
+        glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices));    
 
-        lightingShader.Use();
-        lightingShader.SetVec3("lightPos", lightPos.x, lightPos.y, lightPos.z);
-        lightingShader.SetVec3("viewPos", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
-        lightingShader.SetVec3("spotLight.mPosition", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
-        lightingShader.SetVec3("spotLight.mDirection", camera.mFront.x, camera.mFront.y, camera.mFront.z);
-        glUniformMatrix4fv(transformLocMLighting, 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(transformLocVLighting, 1, GL_FALSE, glm::value_ptr(view));
-        // backpack.Draw(lightingShader);
+        // for (glm::vec2 position : simulation.GetPositions())
+        // {
+        //     densityShader.Use();
+        //     densityShader.SetVec3("spherePosition", glm::vec3(position.x, position.y, 0.f));
+        //     glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices));
+        // }
 
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        glStencilFunc(GL_ALWAYS, 1, 0xFF);
-        glStencilMask(0xFF);
-        cube.Draw(lightingShader);
-        cube2.Draw(lightingShader);
-
-        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-        glStencilMask(0x00);
-        glDisable(GL_DEPTH_TEST);
-        singleColourShader.Use();
-        glUniformMatrix4fv(transformLocMSimple, 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(transformLocVSimple, 1, GL_FALSE, glm::value_ptr(view));
-        cube.Draw(singleColourShader, 1.2f);
-        cube2.Draw(singleColourShader, 1.2f);
-
-        glStencilMask(0xFF);
-        glStencilFunc(GL_ALWAYS, 1, 0xFF);
-        glEnable(GL_DEPTH_TEST);
-
-        // This needs to be properly sorted in the general case
-        cube4.Draw(lightingShader);
-        cube3.Draw(lightingShader);
+        for (glm::vec2 position : simulation.GetPositions())
+        {
+            sphereShader.Use();
+            sphereShader.SetVec3("spherePosition", glm::vec3(position.x, position.y, 0.f));
+            glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices));
+        }
+        glBindVertexArray(0);
 
         SDL_GL_SwapWindow(window);
     }

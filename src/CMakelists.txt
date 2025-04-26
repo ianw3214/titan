@@ -9,3 +9,5 @@ target_sources(Titan PRIVATE
 
 add_subdirectory(lighting)
 add_subdirectory(shapes)
+
+add_subdirectory(fluid)
