@@ -23,7 +23,7 @@ float SmoothingKernel(float radius, float distance)
 // =====================================================
 float ConvertDensityToPressure(float density)
 {
-    const float targetDensity = 1.0;
+    const float targetDensity = 2.0;
     const float pressureMultiplier = 0.5;
 
     float densityError = density - targetDensity;

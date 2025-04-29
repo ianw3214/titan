@@ -4,9 +4,13 @@
 
 #include <glm/vec2.hpp>
 
+#include "spatialLookup.h"
+
 // =====================================================
 class FluidSimulation {
 public:
+    FluidSimulation();
+
     void SetBounds(float w, float h);
 
     void Initialize(uint16_t numParticles);
@@ -27,4 +31,6 @@ private:
     std::vector<glm::vec2> mPositions;
     std::vector<glm::vec2> mVelocities;
     std::vector<float> mDensities;
+
+    SpatialLookup mLookup;
 };

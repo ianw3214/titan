@@ -40,13 +40,27 @@ namespace {
     // =====================================================
     float ConvertDensityToPressure(float density)
     {
-        constexpr float targetDensity = 1.0f;
+        constexpr float targetDensity = 4.5f;
         constexpr float pressureMultiplier = 0.5f;
 
         float densityError = density - targetDensity;
         float pressure = densityError * pressureMultiplier;
         return pressure;
     }
+
+    float CalculateSharedPressure(float density, float otherDensity)
+    {
+        const float pressure1 = ConvertDensityToPressure(density);
+        const float pressure2 = ConvertDensityToPressure(otherDensity);
+        return (pressure1 + pressure2) / 2.f;
+    }
+
+}
+
+// =====================================================
+FluidSimulation::FluidSimulation()
+    : mLookup(mPositions)
+{
 
 }
 
@@ -59,7 +73,7 @@ void FluidSimulation::SetBounds(float w, float h)
 // =====================================================
 void FluidSimulation::Initialize(uint16_t numParticles)
 {
-    constexpr float particleSpacing = 5.f;
+    constexpr float particleSpacing = 0.05f;
 
     mPositions.reserve(numParticles);
     mVelocities.reserve(numParticles);
@@ -76,11 +90,11 @@ void FluidSimulation::Initialize(uint16_t numParticles)
 
     for (int i = 0; i < numParticles; ++i)
     {
-        const float x = x_distrib(gen);
-        const float y = y_distrib(gen);
+        // const float x = x_distrib(gen);
+        // const float y = y_distrib(gen);
 
-        // float x = (i % numParticlesPerRow - numParticlesPerRow / 2.f + 0.5f) * spacing;
-        // float y = (i / numParticlesPerRow - numParticlesPerCol / 2.f + 0.5f) * spacing;
+        float x = (i % numParticlesPerRow - numParticlesPerRow / 2.f + 0.5f) * spacing;
+        float y = (i / numParticlesPerRow - numParticlesPerCol / 2.f + 0.5f) * spacing;
         mPositions.emplace_back(x, y);
         mVelocities.emplace_back(0.f, 0.f);
         mDensities.emplace_back(0.f);
@@ -91,6 +105,8 @@ void FluidSimulation::Initialize(uint16_t numParticles)
 void FluidSimulation::Update(float deltaSeconds)
 {
     constexpr float gravity = 981.f;
+    constexpr float smoothingRadius = 1.2f;
+    mLookup.Update(smoothingRadius);
 
     for (size_t i = 0; i < mPositions.size(); ++i)
     {
@@ -102,6 +118,10 @@ void FluidSimulation::Update(float deltaSeconds)
     {
         glm::vec2 pressureForce = CalculatePressureForce(i);
         glm::vec2 pressureAcceleration = pressureForce / mDensities[i];
+        if (std::isnan(pressureAcceleration.x) || std::isnan(pressureAcceleration.y))
+        {
+            __debugbreak();
+        }
         mVelocities[i] += pressureAcceleration;
     }
 
@@ -138,11 +158,21 @@ float FluidSimulation::CalculateDensity(const glm::vec2& samplePoint)
 
     float density = 0.f;
 
-    for (const glm::vec2& position : mPositions)
-    {
-        float distance = glm::length(position - samplePoint);
-        float influence = SmoothingKernel(smoothingRadius, distance);
+    // for (const glm::vec2& position : mPositions)
+    // {
+    //     float distance = glm::length(position - samplePoint);
+    //     float influence = SmoothingKernel(smoothingRadius, distance);
+    //     density += mass * influence;
+    // }
+    mLookup.ForEachPointInRadius(samplePoint, smoothingRadius, [this, &density, samplePoint](size_t index){
+        const float distance = glm::length(this->mPositions[index] - samplePoint);
+        const float influence = SmoothingKernel(smoothingRadius, distance);
         density += mass * influence;
+    });
+
+    if (density == 0.f)
+    {
+        __debugbreak();
     }
     
     return density;
@@ -156,17 +186,36 @@ glm::vec2 FluidSimulation::CalculatePressureForce(size_t particleIndex)
 
     glm::vec2 pressureForce = glm::vec2(0.f);
 
-    for (size_t i = 0; i < mPositions.size(); ++i)
-    {
-        if (i == particleIndex)
+    // for (size_t i = 0; i < mPositions.size(); ++i)
+    // {
+    //     if (i == particleIndex)
+    //     {
+    //         continue;
+    //     }
+    //     float distance = glm::length(mPositions[i] - mPositions[particleIndex]);
+    //     glm::vec2 direction = (distance == 0.f) ? glm::circularRand(1.f) : (mPositions[i] - mPositions[particleIndex]) / distance;
+    //     float slope = SmoothingKernelDerivative(smoothingRadius, distance);
+    //     float density = mDensities[i];
+    //     float sharedPressure = CalculateSharedPressure(density, mDensities[particleIndex]);
+    //     pressureForce += sharedPressure * direction * slope * mass / density;
+    // }
+    mLookup.ForEachPointInRadius(mPositions[particleIndex], smoothingRadius, [this, particleIndex, &pressureForce](size_t index){
+        if (index == particleIndex)
         {
-            continue;
+            return;
         }
-        float distance = glm::length(mPositions[i] - mPositions[particleIndex]);
-        glm::vec2 direction = (distance == 0.f) ? glm::circularRand(1.f) : (mPositions[i] - mPositions[particleIndex]) / distance;
-        float slope = SmoothingKernelDerivative(smoothingRadius, distance);
-        float density = mDensities[i];
-        pressureForce += ConvertDensityToPressure(density) * direction * slope * mass / density;
+        const float distance = glm::length(mPositions[index] - mPositions[particleIndex]);
+        const glm::vec2 direction = (distance == 0.f) ? glm::circularRand(1.f) : (mPositions[index] - mPositions[particleIndex]) / distance;
+        const float slope = SmoothingKernelDerivative(smoothingRadius, distance);
+        const float density = mDensities[index];
+        const float sharedPressure = CalculateSharedPressure(density, mDensities[particleIndex]);
+        pressureForce += sharedPressure * direction * slope * mass / density;
+    });
+
+    if (std::isnan(pressureForce.x) || std::isnan(pressureForce.y))
+    {
+        __debugbreak();
     }
+
     return pressureForce;
 }

@@ -1,1 +1,2 @@
-target_sources(Titan PRIVATE simulation.h simulation.cpp)
+target_sources(Titan PRIVATE simulation.h spatialLookup.h) 
+target_sources(Titan PRIVATE simulation.cpp spatialLookup.cpp)

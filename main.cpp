@@ -93,8 +93,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     glEnableVertexAttribArray(0);
 
     FluidSimulation simulation;
-    simulation.SetBounds(9.f, 9.f);
-    simulation.Initialize(121);
+    simulation.SetBounds(12.f, 12.f);
+    simulation.Initialize(1000);
 
     bool running = true;
     while (running)
@@ -130,28 +130,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
         simulation.Update(deltaTime);
 
+        /*
         for (size_t i = 0; i < simulation.GetPositions().size(); ++i)
         {
             const glm::vec2 pos = simulation.GetPositions()[i];
             const std::string name = std::string("particles[" + std::to_string(i) + ']');
             pressureShader.SetVec3(name, glm::vec3(pos.x, pos.y, 0.f));
-            
         }
+        */
 
         // Rendering here...
         glClearColor(0.01, 0.0f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
 
         glBindVertexArray(VAO);
-        pressureShader.Use();
-        glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices));    
+        // pressureShader.Use();
+        // glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices));    
 
-        // for (glm::vec2 position : simulation.GetPositions())
-        // {
-        //     densityShader.Use();
-        //     densityShader.SetVec3("spherePosition", glm::vec3(position.x, position.y, 0.f));
-        //     glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices));
-        // }
+        for (glm::vec2 position : simulation.GetPositions())
+        {
+            densityShader.Use();
+            densityShader.SetVec3("spherePosition", glm::vec3(position.x, position.y, 0.f));
+            glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices));
+        }
 
         for (glm::vec2 position : simulation.GetPositions())
         {
